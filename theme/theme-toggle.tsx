@@ -14,7 +14,7 @@ export default function ThemeToggle() {
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
       <div className="items-center gap-2 hidden dark:flex ">
         <Sun className="size-5" />
-        <span className="hidden md:block">Espresso</span>
+        <span className="hidden md:block">Crema</span>
       </div>
       <div className="flex items-center gap-2 dark:hidden">
         <Moon className="size-5" />
