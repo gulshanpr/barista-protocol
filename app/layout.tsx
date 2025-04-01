@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/theme/theme-provider";
-import ThemeToggle from "@/theme/theme-toggle";
 import Header from "@/components/Header";
 
 const spaceGrotesk = Space_Grotesk({
