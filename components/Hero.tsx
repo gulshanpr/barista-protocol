@@ -28,9 +28,7 @@ const Hero = () => {
           Brew Your Future Across Chains
         </h1>
         <p className="md:max-w-[55rem] text-center md:text-left">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ducimus alias in minima
-          officiis accusamus beatae labore animi, atque dolor asperiores laborum ea nesciunt ipsa
-          impedit modi optio quam quasi!
+          Lend and borrow assets across multiple rollups with ease using Barista Protocol. Powered by Espresso, it keeps your positions synced and secure while making DeFi feel simple again.
         </p>
         <div className="flex gap-3 justify-center items-center md:justify-start">
           <button
