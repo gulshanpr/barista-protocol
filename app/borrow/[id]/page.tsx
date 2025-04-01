@@ -60,6 +60,7 @@ const page = () => {
               <input
                 type="number"
                 placeholder="0.00"
+                min={0}
                 className="bg-coffee dark:bg-cream rounded-lg p-5 flex flex-col gap-5 text-cream placeholder:text-2xl
                 border border-cream dark:border-coffee dark:placeholder:text-coffee"
               />
@@ -70,6 +71,7 @@ const page = () => {
               <input
                 type="number"
                 placeholder="0.00"
+                min={0}
                 className="bg-coffee dark:bg-cream rounded-lg p-5 flex flex-col gap-5  text-cream placeholder:text-2xl
                   border border-cream dark:border-coffee dark:placeholder:text-coffee"
               />

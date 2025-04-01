@@ -8,6 +8,7 @@ import Link from "next/link";
 import Bridge from "./Bridge";
 import { createWalletClient, custom } from "viem";
 import { espresso } from "@/lib/espresso-chain";
+import { toast } from "sonner";
 
 // Define links for navigation
 const links = [
@@ -40,6 +41,14 @@ const Header = () => {
     }
   };
 
+  const handleNavigation = (href: string) => {
+    if (!authenticated) {
+      toast.error("You must be connected to a wallet to access this page.");
+    } else {
+      window.location.href = href; // Navigate to the page
+    }
+  };
+
   return (
     <header className="px-2 md:px-9 py-2 rounded-xl border-b-2 border-coffee dark:border-cream">
       <nav className="flex flex-col sm:flex-row justify-between items-center">
@@ -66,12 +75,19 @@ const Header = () => {
         <ul className="flex font-semibold items-center">
           {links.map((link) => (
             <li key={link.name} className="hidden lg:flex text-lg items-center">
-              <Link
-                href={link.href}
-                className="hover-underline relative text-coffee dark:text-cream px-4 py-2 transition-all cursor-pointer after:bg-coffee dark:after:bg-cream"
-              >
-                {link.name}
-              </Link>
+              {link.name === "Lend" || link.name === "Borrow" ? (
+                <button
+                  onClick={() => handleNavigation(link.href)}
+                  className="hover-underline relative text-coffee dark:text-cream px-4 py-2 transition-all cursor-pointer after:bg-coffee dark:after:bg-cream">
+                  {link.name}
+                </button>
+              ) : (
+                <Link
+                  href={link.href}
+                  className="hover-underline relative text-coffee dark:text-cream px-4 py-2 transition-all cursor-pointer after:bg-coffee dark:after:bg-cream">
+                  {link.name}
+                </Link>
+              )}
             </li>
           ))}
         </ul>
@@ -103,8 +119,7 @@ const Header = () => {
               </div>
               <button
                 className="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all cursor-pointer"
-                onClick={logout}
-              >
+                onClick={logout}>
                 Disconnect
               </button>
             </div>
@@ -112,8 +127,7 @@ const Header = () => {
             <button
               className="bg-coffee text-cream px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all cursor-pointer dark:bg-cream dark:text-coffee hover:bg-coffee/70 dark:hover:bg-cream/70"
               onClick={login}
-              disabled={!ready}
-            >
+              disabled={!ready}>
               Connect Wallet
             </button>
           )}

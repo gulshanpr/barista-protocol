@@ -4,6 +4,7 @@ import "./globals.css";
 import ThemeProvider from "@/theme/theme-provider";
 import Header from "@/components/Header";
 import Providers from "@/lib/provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -45,6 +46,7 @@ export default function RootLayout({
             disableTransitionOnChange>
             <Header />
             <Providers>{children}</Providers>
+            <Toaster />
           </ThemeProvider>
         </Providers>
       </body>

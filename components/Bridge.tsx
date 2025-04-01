@@ -1,16 +1,9 @@
 import { ArrowDownUp, Fuel, Repeat } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { useState } from "react";
 import Image from "next/image";
 import { ScrollArea } from "./ui/scroll-area";
 
 const Bridge = () => {
-  const [networks, setNetworks] = useState(["Ethereum", "USDC"]);
-
-  const handleSwap = () => {
-    setNetworks((prev) => [prev[1], prev[0]]);
-  };
-
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -29,45 +22,38 @@ const Bridge = () => {
           <div className="mt-4 flex flex-col gap-2 relative z-1">
             <div className="flex items-center justify-between bg-cream dark:bg-coffee text-coffee dark:text-cream px-4 py-2 rounded">
               <div className="flex flex-col gap-1">
-                <span className="text-sm">Network</span>
-                <span className="font-bold">{networks[0]}</span>
+                <span className="text-sm">Origin</span>
+                <span className="font-bold">Arbitrum</span>
               </div>
               <Image
-                src={networks[0] === "Ethereum" ? "/ethereum-dark.svg" : "/usdc.svg"}
-                alt={networks[0]}
+                src="/arbitrum.svg"
+                alt="Arbitrum"
                 width={24}
                 height={24}
                 className="dark:hidden"
               />
-              <Image
-                src={networks[0] === "Ethereum" ? "/ethereum.svg" : "/usdc.svg"}
-                alt={networks[0]}
-                width={24}
-                height={24}
-                className="hidden dark:block"
-              />
             </div>
             <button
-              onClick={handleSwap}
-              className="absolute top-[35%] left-1/2 right-1/2 z-10 bg-coffee text-cream px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all cursor-pointer dark:bg-cream dark:text-coffee border border-cream dark:border-coffee flex justify-center hover:opacity-90">
+              disabled
+              className="absolute top-[35%] left-1/2 right-1/2 z-10 bg-coffee text-cream px-4 py-2 rounded-lg font-medium transition-all dark:bg-cream dark:text-coffee border border-cream dark:border-coffee flex justify-center">
               <ArrowDownUp size={16} className="flex-shrink-0" />
               <span className="sr-only">Swap</span>
             </button>
             <div className="flex items-center justify-between bg-cream dark:bg-coffee text-coffee dark:text-cream px-4 py-2 rounded">
               <div className="flex flex-col gap-1">
-                <span className="text-sm">Network</span>
-                <span className="font-bold">{networks[1]}</span>
+                <span className="text-sm">Origin</span>
+                <span className="font-bold">Ethereum</span>
               </div>
               <Image
-                src={networks[1] === "Ethereum" ? "/ethereum-dark.svg" : "/usdc.svg"}
-                alt={networks[1]}
+                src="/ethereum-dark.svg"
+                alt="Ethereum"
                 width={24}
                 height={24}
                 className="dark:hidden"
               />
               <Image
-                src={networks[1] === "Ethereum" ? "/ethereum.svg" : "/usdc-dark.svg"}
-                alt={networks[1]}
+                src="/ethereum.svg"
+                alt="Ethereum"
                 width={24}
                 height={24}
                 className="hidden dark:block"
@@ -83,6 +69,7 @@ const Bridge = () => {
                 id="amount"
                 name="amount"
                 type="number"
+                min={0}
                 className="w-full bg-cream dark:bg-coffee text-coffee dark:text-cream px-4 pt-2 pb-1 rounded-t mt-2 text-2xl focus:outline-none focus:ring-2 focus:ring-coffee dark:focus:ring-cream placeholder:text-coffee dark:placeholder:text-cream font-medium"
                 placeholder="0.00"
               />

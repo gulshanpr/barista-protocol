@@ -1,8 +1,26 @@
+"use client";
+
 import { Download, Upload } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import { toast } from "sonner";
+import { usePrivy } from "@privy-io/react-auth";
 
 const Hero = () => {
+  const { ready, authenticated } = usePrivy();
+
+  const handleNavigation = (href: string) => {
+    if (!ready) {
+      toast.error("Please wait while we verify your authentication status.");
+      return;
+    }
+
+    if (!authenticated) {
+      toast.error("You must be connected to a wallet to access this page.");
+    } else {
+      window.location.href = href;
+    }
+  };
+
   return (
     <section className="px-4 md:px-10 py-20 md:pt-10 md:pb-0 flex flex-col md:flex-row items-center justify-between lg:w-[95%] mx-auto">
       <div className="flex flex-col gap-8">
@@ -15,18 +33,18 @@ const Hero = () => {
           impedit modi optio quam quasi!
         </p>
         <div className="flex gap-3 justify-center items-center md:justify-start">
-          <Link
-            href="/lend"
+          <button
+            onClick={() => handleNavigation("/lend")}
             className="border-2 rounded-lg px-10 py-2 font-bold bg-coffee text-cream hover:bg-coffee/60 transition-colors dark:bg-cream dark:text-coffee dark:hover:bg-cream/60 dark:border-cream border-coffee flex items-center gap-2">
             <Upload />
             Lend
-          </Link>
-          <Link
-            href="/borrow"
-            className="border-2 rounded-lg px-10 py-2 font-bold border-coffee hover:bg-coffee hover:text-cream transition-colors  dark:hover:bg-cream dark:hover:text-coffee dark:border-cream flex items-center gap-2 ">
+          </button>
+          <button
+            onClick={() => handleNavigation("/borrow")}
+            className="border-2 rounded-lg px-10 py-2 font-bold border-coffee hover:bg-coffee hover:text-cream transition-colors dark:hover:bg-cream dark:hover:text-coffee dark:border-cream flex items-center gap-2">
             <Download />
             Borrow
-          </Link>
+          </button>
         </div>
       </div>
       <div className="overflow-hidden">
