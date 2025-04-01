@@ -3,6 +3,7 @@ import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/theme/theme-provider";
 import Header from "@/components/Header";
+import Providers from "@/lib/provider";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -36,14 +37,16 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${spaceGrotesk.className} antialiased bg-cream dark:bg-coffee text-coffee dark:text-cream`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange>
-          <Header />
-          {children}
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange>
+            <Header />
+            <Providers>{children}</Providers>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );
