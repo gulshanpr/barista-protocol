@@ -120,7 +120,7 @@ const Header = () => {
               <button
                 className="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all cursor-pointer"
                 onClick={() => switchChain(espresso.id)}
-                // onClick={logout}> 
+                // onClick={logout}
                 >
                 Disconnect
               </button>

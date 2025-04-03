@@ -1,4 +1,5 @@
 import { defineChain } from "viem";
+const rpc = process.env.NEXT_PUBLIC_RPC_URL;
 
 export const espresso = defineChain({
   id: 345_678,
@@ -11,7 +12,7 @@ export const espresso = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ["http://34.60.203.137:8547"],
+      http: [rpc],
     },
   },
   testnet: true,
