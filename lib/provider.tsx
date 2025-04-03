@@ -1,13 +1,17 @@
 'use client';
 
 import {PrivyProvider} from '@privy-io/react-auth';
-import {arbitrumSepolia} from './espresso-chain';
+
+import { espresso } from "@/lib/espresso-chain";
+import { arbitrumSepolia } from 'viem/chains';
 
 export default function Providers({children}: {children: React.ReactNode}) {
   return (
     <PrivyProvider
       appId="cm6vjpmqc00nte6wj3g9v1p0n"
       config={{
+        defaultChain: arbitrumSepolia,
+        supportedChains: [espresso, arbitrumSepolia],
         // Customize Privy's appearance in your app
         appearance: {
           theme: 'light',
