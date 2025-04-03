@@ -24,9 +24,9 @@ const Bridge = () => {
   const [address, setaddress] = useState<string | null>(null);
   const [amt, setAmt] = useState<number | null>(0);
   // const { ready, authenticated, login, logout } = usePrivy();
-  const [walletClient, setWalletClient] = useState(null);
-  const [arbBalance, setArbBalance] = useState(null);
-  const [error, setError] = useState(null);
+  const [walletClient, setWalletClient] = useState<ReturnType<typeof createWalletClient> | null>(null);
+  const [arbBalance, setArbBalance] = useState<bigint | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [espressoBalance, setEspressoBalance] = useState<number | bigint>(0);
 
@@ -60,7 +60,7 @@ const Bridge = () => {
           transport: custom(provider),
         });
   
-        setWalletClient(client); // Remove `as any`, ensure `walletClient` is properly typed
+        setWalletClient(client as any);
         console.log("Connected wallet:", wallet.address);
       } catch (error) {
         console.error("Error initializing wallet client:", error);
@@ -106,7 +106,7 @@ const Bridge = () => {
       // Define the transaction parameters
       const transaction = {
         account: address,
-        to: "0xFF0cEc49832Fe76957BBB55F1c331f4Fd689369a", // Replace with your contract address
+        to: "0xFF0cEc49832Fe76957BBB55F1c331f4Fd689369a" as `0x${string}`, // Replace with your contract address
         value: BigInt(amt ?? 0), // Use the amount from the state, ensure it's in wei
         data: functionData, // No additional data needed for depositEth if it's payable
         chain: arbitrumSepolia, // Ensure the correct chain ID is used
@@ -118,7 +118,7 @@ const Bridge = () => {
       setError(null);
     } catch (error) {
       console.error("Transaction error:", error);
-      setError("Transaction failed: " + error.message);
+      setError("Transaction failed: " + (error instanceof Error ? error.message : "Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -170,11 +170,11 @@ const Bridge = () => {
           const balanceWei = BigInt(data.result);  // Keep full precision in Wei
           console.log("Balance in Wei:", balanceWei.toString());  // Full balance without loss
           
-          setArbBalance(balanceWei);  // Convert to Ether for display
+          setArbBalance(BigInt(balanceWei));  // Convert to Ether for display
         }
       } catch (error) {
         console.error("Error fetching balance:", error);
-        setError("Failed to fetch balance: " + error.message);
+        setError("Failed to fetch balance: " + (error as any).message);
       } finally {
         setLoading(false);
       }
@@ -228,7 +228,7 @@ const Bridge = () => {
         }
       } catch (error) {
         console.error("Error fetching balance:", error);
-        setError("Failed to fetch balance: " + error.message);
+        setError("Failed to fetch balance: " + (error as any).message);
       } finally {
         setLoading(false);
       }

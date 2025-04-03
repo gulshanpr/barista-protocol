@@ -1,5 +1,5 @@
 import { defineChain } from "viem";
-const rpc = process.env.NEXT_PUBLIC_RPC_URL;
+const rpc = process.env.NEXT_PUBLIC_RPC_URL || "";
 
 export const espresso = defineChain({
   id: 345_678,
