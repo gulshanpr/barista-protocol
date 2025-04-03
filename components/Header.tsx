@@ -6,7 +6,6 @@ import Image from "next/image";
 import ThemeToggle from "@/theme/theme-toggle";
 import Link from "next/link";
 import Bridge from "./Bridge";
-import { createWalletClient, custom } from "viem";
 import { espresso } from "@/lib/espresso-chain";
 import { toast } from "sonner";
 
@@ -20,8 +19,9 @@ const links = [
 const Header = () => {
   const { ready, authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
-  const wallet = wallets[0]; // Assuming you only want the first wallet
+  const wallet = wallets[0]; // Assuming only the first wallet is used
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [currentChainId, setCurrentChainId] = useState<number | null>(null);
 
   // Set wallet address when authenticated
   useEffect(() => {
@@ -30,12 +30,28 @@ const Header = () => {
     }
   }, [wallet]);
 
+  // Get the current chain ID
+  useEffect(() => {
+    const getChainId = async () => {
+      if (wallet) {
+        try {
+          const chain = await wallet.getChain();
+          setCurrentChainId(chain.id);
+        } catch (error) {
+          console.error("Error fetching chain ID:", error);
+        }
+      }
+    };
+    getChainId();
+  }, [wallet]);
+
   // Function to switch the chain
   const switchChain = async (chainId: number) => {
     if (!wallet) return;
     try {
-      await wallet.switchChain(chainId); // Replace with your desired chain ID
+      await wallet.switchChain(chainId);
       console.log(`Successfully switched to chain ID: ${chainId}`);
+      setCurrentChainId(chainId); // Update local state
     } catch (error) {
       console.error("Failed to switch chain:", error);
     }
@@ -45,7 +61,7 @@ const Header = () => {
     if (!authenticated) {
       toast.error("You must be connected to a wallet to access this page.");
     } else {
-      window.location.href = href; // Navigate to the page
+      window.location.href = href;
     }
   };
 
@@ -93,7 +109,6 @@ const Header = () => {
         </ul>
 
         <div className="flex items-center gap-4">
-          {/* Wallet section */}
           {authenticated ? (
             <div className="flex gap-3 items-center">
               <div className="p-2 bg-coffee dark:bg-cream rounded-full">
@@ -114,17 +129,24 @@ const Header = () => {
               </div>
               <div className="bg-coffee text-cream dark:bg-cream dark:text-coffee px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all cursor-pointer">
                 <p className="font-semibold truncate max-w-[5rem]">
-                  {walletAddress ? walletAddress : "No wallet connected"}
+                  {walletAddress || "No wallet connected"}
                 </p>
               </div>
+
+              {/* Show 'Switch Network' button only if on wrong chain */}
+              {currentChainId !== espresso.id && (
+                <button
+                  className="bg-yellow-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all cursor-pointer"
+                  onClick={() => switchChain(espresso.id)}>
+                  Switch Network
+                </button>
+              )}
+
               <button
                 className="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all cursor-pointer"
-                onClick={() => switchChain(espresso.id)}
-                // onClick={logout}
-                >
+                onClick={logout}>
                 Disconnect
               </button>
-              {/* <button onClick={}>Click Me</button> */}
             </div>
           ) : (
             <button
