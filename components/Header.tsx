@@ -35,8 +35,8 @@ const Header = () => {
     const getChainId = async () => {
       if (wallet) {
         try {
-          const chain = await wallet.getChain();
-          setCurrentChainId(chain.id);
+          const chain = await wallet.chainId;
+          setCurrentChainId(Number(chain));
         } catch (error) {
           console.error("Error fetching chain ID:", error);
         }

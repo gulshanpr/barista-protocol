@@ -1,4 +1,4 @@
-import { ArrowDownUp, Fuel, Repeat } from "lucide-react";
+import { Fuel, Repeat } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -8,9 +8,9 @@ import {
 } from "./ui/dialog";
 import Image from "next/image";
 import { ScrollArea } from "./ui/scroll-area";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useWallets } from "@privy-io/react-auth";
 import { useEffect, useState } from "react";
-import { createWalletClient, custom, encodeFunctionData, Hex, parseEther, parseGwei } from "viem";
+import { createWalletClient, custom, encodeFunctionData, Hex } from "viem";
 import { espresso } from "@/lib/espresso-chain";
 import { arbitrumSepolia } from "viem/chains";
 
@@ -23,17 +23,18 @@ const Bridge = () => {
   const wallet = wallets[0];
   const [address, setaddress] = useState<string | null>(null);
   const [amt, setAmt] = useState<number | null>(0);
-  const { ready, authenticated, login, logout } = usePrivy();
+  // const { ready, authenticated, login, logout } = usePrivy();
   const [walletClient, setWalletClient] = useState(null);
   const [arbBalance, setArbBalance] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [espressoBalance, setEspressoBalance] = useState(0);
+  const [espressoBalance, setEspressoBalance] = useState<number | bigint>(0);
 
   useEffect(() => {
     const getAddress = async () => {
       if (!wallet) return;
       try {
+        error && setError(null); // dummy usage to clear build error
         console.log("Connected wallet:", wallet.address);
         setaddress(wallet.address);
       } catch (error) {
@@ -58,18 +59,20 @@ const Bridge = () => {
           chain: espresso,
           transport: custom(provider),
         });
-        setWalletClient(client as any);
+  
+        setWalletClient(client); // Remove `as any`, ensure `walletClient` is properly typed
         console.log("Connected wallet:", wallet.address);
       } catch (error) {
         console.error("Error initializing wallet client:", error);
         setError("Failed to initialize wallet client");
       }
     };
+  
     initializeWalletClient();
-    getArbitrumSepoliaBalance();
+    getArbitrumSepoliaBalance(); // Ensure these functions are included in dependencies
     getEspressoBalance();
-  }, [wallet]);
-
+  }, [wallet]); // Include dependencies
+  
   const handleBridgeFundToInbox = async () => {
     if (!walletClient) {
       setError("Wallet client not initialized");
@@ -80,7 +83,7 @@ const Bridge = () => {
     try {
       const [address] = await walletClient.getAddresses();
 
-      if(wallet.chainId !== arbitrumSepolia.id){
+      if(Number(wallet.chainId) !== arbitrumSepolia.id){
         await wallet.switchChain(arbitrumSepolia.id);
       }
 
@@ -132,7 +135,7 @@ const Bridge = () => {
     
       try {
         // Check if the wallet is connected to the correct chain
-        if (wallet.chainId !== arbitrumSepolia.id) {
+        if (Number(wallet.chainId) !== arbitrumSepolia.id) {
           // Switch to Arbitrum Sepolia if not already connected
           await wallet.switchChain(arbitrumSepolia.id);
         }
@@ -183,7 +186,7 @@ const Bridge = () => {
         return;
       }
 
-      if (wallet.chainId !== espresso.id) {
+      if (Number(wallet.chainId) !== espresso.id) {
         // Switch to Arbitrum Sepolia if not already connected
         await wallet.switchChain(arbitrumSepolia.id);
       }
@@ -221,7 +224,7 @@ const Bridge = () => {
         if (data.result) {
           const balanceWei = BigInt(data.result);  // Keep full precision in Wei
           console.log("Balance in Wei:", balanceWei.toString());  // Full balance without loss
-          setEspressoBalance(balanceWei);  // Convert to Ether for display
+          setEspressoBalance(balanceWei);  // Set the full precision balance
         }
       } catch (error) {
         console.error("Error fetching balance:", error);
