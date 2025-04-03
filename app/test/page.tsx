@@ -6,6 +6,7 @@ import { createWalletClient, custom, Hex, parseEther } from "viem";
 import { espresso } from "@/lib/espresso-chain"; 
 import { createPublicClient, http } from "viem";
 import { formatEther } from "viem";
+import { arbitrumSepolia } from "viem/chains";
 
 export default function Page() {
   const { ready, authenticated, login, logout } = usePrivy();
@@ -73,7 +74,13 @@ export default function Page() {
     setError(null);
   
     try {
-      // Use the proxy RPC endpoint
+
+      console.log("chainId is first", wallet.chainId);
+
+    //   // Use the proxy RPC endpoint
+    //   if(wallet.chainId === 345678){
+    //     await wallet.switchChain(arbitrumSepolia.id);
+    //   }
       const response = await fetch(proxyRpcUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,6 +91,8 @@ export default function Page() {
           params: [wallet.address, 'latest'],
         }),
       });
+
+      console.log("chainId is", wallet.chainId);
   
       const data = await response.json();
   
@@ -105,6 +114,63 @@ export default function Page() {
   };
   
 
+  const getArbitrumSepoliaBalance = async () => {
+    if (!wallet || !wallet.address) {
+      setError("No wallet connected");
+      return;
+    }
+  
+    setLoading(true);
+    setError(null);
+  
+    try {
+      // Check if the wallet is connected to the correct chain
+      if (wallet.chainId !== arbitrumSepolia.id) {
+        // Switch to Arbitrum Sepolia if not already connected
+        await wallet.switchChain(arbitrumSepolia.id);
+      }
+  
+      console.log("Chain ID is", wallet.chainId);
+  
+      // Use the RPC endpoint for Arbitrum Sepolia
+      const rpcUrl = arbitrumSepolia.rpcUrls.default.http[0];
+      const response = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_getBalance',
+          params: [wallet.address, 'latest'],
+        }),
+      });
+  
+      // Log the raw response text for debugging
+      const responseText = await response.text();
+      console.log("Raw response:", responseText);
+  
+      // Parse the JSON response
+      const data = JSON.parse(responseText);
+  
+      if (data.error) {
+        throw new Error(data.error.message || 'RPC error');
+      }
+  
+      if (data.result) {
+        const balanceWei = BigInt(data.result);  // Keep full precision in Wei
+        console.log("Balance in Wei:", balanceWei.toString());  // Full balance without loss
+        setBalance(balanceWei);  // Convert to Ether for display
+      }
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+      setError("Failed to fetch balance: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
+  
   const handleChangeToEspresso = async () => {
     if (!wallet) {
       setError("No wallet connected");
@@ -124,6 +190,9 @@ export default function Page() {
     }
   };
 
+  const handleCurrentChain = async () => {
+    console.log("current chain", wallet.chainId);
+  }
   if (!ready) return <p>Loading...</p>;
 
   return (
@@ -164,6 +233,9 @@ export default function Page() {
             disabled={loading}
           >
             Get Balance
+          </button>
+            <button onClick={handleCurrentChain}>get current chain</button>
+          <button onClick={getArbitrumSepoliaBalance}>get balance on arbitrum
           </button>
         </div>
       )}
