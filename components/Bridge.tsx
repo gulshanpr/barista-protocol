@@ -10,13 +10,12 @@ import Image from "next/image";
 import { ScrollArea } from "./ui/scroll-area";
 import { useWallets } from "@privy-io/react-auth";
 import { useEffect, useState } from "react";
-import { createWalletClient, custom, encodeFunctionData, Hex } from "viem";
+import { createWalletClient, custom, encodeFunctionData, formatUnits, Hex, parseEther } from "viem";
 import { espresso } from "@/lib/espresso-chain";
 import { arbitrumSepolia } from "viem/chains";
-
+import { createPublicClient, http } from 'viem';
 
 const proxyRpcUrl = "/api/rpc-proxy";
-
 
 const Bridge = () => {
   const { wallets } = useWallets();
@@ -24,7 +23,9 @@ const Bridge = () => {
   const [address, setaddress] = useState<string | null>(null);
   const [amt, setAmt] = useState<number | null>(0);
   // const { ready, authenticated, login, logout } = usePrivy();
-  const [walletClient, setWalletClient] = useState<ReturnType<typeof createWalletClient> | null>(null);
+  const [walletClient, setWalletClient] = useState<ReturnType<
+    typeof createWalletClient
+  > | null>(null);
   const [arbBalance, setArbBalance] = useState<bigint | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -59,7 +60,7 @@ const Bridge = () => {
           chain: espresso,
           transport: custom(provider),
         });
-  
+
         setWalletClient(client as any);
         console.log("Connected wallet:", wallet.address);
       } catch (error) {
@@ -67,12 +68,12 @@ const Bridge = () => {
         setError("Failed to initialize wallet client");
       }
     };
-  
+
     initializeWalletClient();
     getArbitrumSepoliaBalance(); // Ensure these functions are included in dependencies
     getEspressoBalance();
   }, [wallet]); // Include dependencies
-  
+
   const handleBridgeFundToInbox = async () => {
     if (!walletClient) {
       setError("Wallet client not initialized");
@@ -83,26 +84,26 @@ const Bridge = () => {
     try {
       const [address] = await walletClient.getAddresses();
 
-      if(Number(wallet.chainId) !== arbitrumSepolia.id){
+      if (Number(wallet.chainId) !== arbitrumSepolia.id) {
         await wallet.switchChain(arbitrumSepolia.id);
       }
 
       const inboxDepositAbi = [
         {
-          "inputs": [],
-          "name": "depositEth",
-          "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-          "stateMutability": "payable",
-          "type": "function"
-        }
+          inputs: [],
+          name: "depositEth",
+          outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+          stateMutability: "payable",
+          type: "function",
+        },
       ];
-      
+
       const functionData = encodeFunctionData({
         abi: inboxDepositAbi,
         functionName: "depositEth",
-        args: []
+        args: [],
       });
-      
+
       // Define the transaction parameters
       const transaction = {
         account: address,
@@ -118,122 +119,125 @@ const Bridge = () => {
       setError(null);
     } catch (error) {
       console.error("Transaction error:", error);
-      setError("Transaction failed: " + (error instanceof Error ? error.message : "Unknown error"));
+      setError(
+        "Transaction failed: " +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+  
+
+  const getArbitrumSepoliaBalance = async () => {
+    if (!wallet || !wallet.address) {
+      setError("No wallet connected");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Check if the wallet is connected to the correct chain
+      if (Number(wallet.chainId) !== arbitrumSepolia.id) {
+        // Switch to Arbitrum Sepolia if not already connected
+        await wallet.switchChain(arbitrumSepolia.id);
+      }
+
+      console.log("Chain ID is", wallet.chainId);
+
+      // Use the RPC endpoint for Arbitrum Sepolia
+      const rpcUrl = arbitrumSepolia.rpcUrls.default.http[0];
+      const response = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "eth_getBalance",
+          params: [wallet.address, "latest"],
+        }),
+      });
+
+      // Log the raw response text for debugging
+      const responseText = await response.text();
+      console.log("Raw response:", responseText);
+
+      // Parse the JSON response
+      const data = JSON.parse(responseText);
+
+      if (data.error) {
+        throw new Error(data.error.message || "RPC error");
+      }
+
+      if (data.result) {
+        const balanceWei = BigInt(data.result); // Keep full precision in Wei
+        console.log("Balance in Wei:", balanceWei.toString()); // Full balance without loss
+
+        setArbBalance(BigInt(balanceWei)); // Convert to Ether for display
+      }
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+      setError("Failed to fetch balance: " + (error as any).message);
     } finally {
       setLoading(false);
     }
   };
 
-    const getArbitrumSepoliaBalance = async () => {
-      if (!wallet || !wallet.address) {
-        setError("No wallet connected");
-        return;
-      }
-    
-      setLoading(true);
-      setError(null);
-    
-      try {
-        // Check if the wallet is connected to the correct chain
-        if (Number(wallet.chainId) !== arbitrumSepolia.id) {
-          // Switch to Arbitrum Sepolia if not already connected
-          await wallet.switchChain(arbitrumSepolia.id);
-        }
-    
-        console.log("Chain ID is", wallet.chainId);
-    
-        // Use the RPC endpoint for Arbitrum Sepolia
-        const rpcUrl = arbitrumSepolia.rpcUrls.default.http[0];
-        const response = await fetch(rpcUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: 1,
-            method: 'eth_getBalance',
-            params: [wallet.address, 'latest'],
-          }),
-        });
-    
-        // Log the raw response text for debugging
-        const responseText = await response.text();
-        console.log("Raw response:", responseText);
-    
-        // Parse the JSON response
-        const data = JSON.parse(responseText);
-    
-        if (data.error) {
-          throw new Error(data.error.message || 'RPC error');
-        }
-    
-        if (data.result) {
-          const balanceWei = BigInt(data.result);  // Keep full precision in Wei
-          console.log("Balance in Wei:", balanceWei.toString());  // Full balance without loss
-          
-          setArbBalance(BigInt(balanceWei));  // Convert to Ether for display
-        }
-      } catch (error) {
-        console.error("Error fetching balance:", error);
-        setError("Failed to fetch balance: " + (error as any).message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const getEspressoBalance = async () => {
+    if (!wallet || !wallet.address) {
+      setError("No wallet connected");
+      return;
+    }
 
-    const getEspressoBalance = async () => {
-      if (!wallet || !wallet.address) {
-        setError("No wallet connected");
-        return;
-      }
+    if (Number(wallet.chainId) !== espresso.id) {
+      // Switch to Arbitrum Sepolia if not already connected
+      await wallet.switchChain(arbitrumSepolia.id);
+    }
 
-      if (Number(wallet.chainId) !== espresso.id) {
-        // Switch to Arbitrum Sepolia if not already connected
-        await wallet.switchChain(arbitrumSepolia.id);
-      }
-    
-      setLoading(true);
-      setError(null);
-    
-      try {
-  
-        console.log("chainId is first", wallet.chainId);
-  
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log("chainId is first", wallet.chainId);
+
       //   // Use the proxy RPC endpoint
       //   if(wallet.chainId === 345678){
       //     await wallet.switchChain(arbitrumSepolia.id);
       //   }
-        const response = await fetch(proxyRpcUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: 1,
-            method: 'eth_getBalance',
-            params: [wallet.address, 'latest'],
-          }),
-        });
-  
-        console.log("chainId is", wallet.chainId);
-    
-        const data = await response.json();
-    
-        if (data.error) {
-          throw new Error(data.error.message || 'RPC error');
-        }
-    
-        if (data.result) {
-          const balanceWei = BigInt(data.result);  // Keep full precision in Wei
-          console.log("Balance in Wei:", balanceWei.toString());  // Full balance without loss
-          setEspressoBalance(balanceWei);  // Set the full precision balance
-        }
-      } catch (error) {
-        console.error("Error fetching balance:", error);
-        setError("Failed to fetch balance: " + (error as any).message);
-      } finally {
-        setLoading(false);
+      const response = await fetch(proxyRpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "eth_getBalance",
+          params: [wallet.address, "latest"],
+        }),
+      });
+
+      console.log("chainId is", wallet.chainId);
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error.message || "RPC error");
       }
-    };
-    
+
+      if (data.result) {
+        const balanceWei = BigInt(data.result); // Keep full precision in Wei
+        console.log("Balance in Wei:", balanceWei.toString()); // Full balance without loss
+        setEspressoBalance(balanceWei); // Set the full precision balance
+      }
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+      setError("Failed to fetch balance: " + (error as any).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>

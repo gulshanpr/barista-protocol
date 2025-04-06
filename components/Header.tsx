@@ -49,8 +49,10 @@ const Header = () => {
   const switchChain = async (chainId: number) => {
     if (!wallet) return;
     try {
+      console.log("first chainid:", wallet.chainId);
       await wallet.switchChain(chainId);
       console.log(`Successfully switched to chain ID: ${chainId}`);
+      console.log("second chainid:", wallet.chainId);
       setCurrentChainId(chainId); // Update local state
     } catch (error) {
       console.error("Failed to switch chain:", error);
@@ -64,6 +66,27 @@ const Header = () => {
       window.location.href = href;
     }
   };
+
+  // const customLogin = async () => {
+  //   try {
+  //     const wallet = wallets[0]; // or prompt to choose
+  //     const provider = await wallet.getEthereumProvider();
+  //     const address = wallet.address;
+
+  //     const customMessage = `message sign kar le land k`;
+
+  //     const signature = await provider.request({
+  //       method: 'personal_sign',
+  //       params: [customMessage, address],
+  //     });
+
+  //     console.log('Signature:', signature);
+  //     // Send `signature` and `address` to your backend to verify & establish session
+
+  //   } catch (err) {
+  //     console.error('Sign-in failed:', err);
+  //   }
+  // };
 
   return (
     <header className="px-2 md:px-9 py-2 rounded-xl border-b-2 border-coffee dark:border-cream">
