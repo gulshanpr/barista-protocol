@@ -8,8 +8,11 @@ import Link from "next/link";
 import Bridge from "./Bridge";
 import { espresso } from "@/lib/espresso-chain";
 import { toast } from "sonner";
+import { handleGetChain, handleSwitchChain } from "@/app/utils/privy";
+import { PrismaClient } from '@prisma/client'
 
-// Define links for navigation
+
+const prisma = new PrismaClient()
 const links = [
   { name: "Home", href: "/" },
   { name: "Lend", href: "/lend" },
@@ -19,23 +22,21 @@ const links = [
 const Header = () => {
   const { ready, authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
-  const wallet = wallets[0]; // Assuming only the first wallet is used
+  const wallet = wallets[0];
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [currentChainId, setCurrentChainId] = useState<number | null>(null);
 
-  // Set wallet address when authenticated
   useEffect(() => {
     if (wallet) {
       setWalletAddress(wallet.address);
     }
   }, [wallet]);
 
-  // Get the current chain ID
   useEffect(() => {
     const getChainId = async () => {
       if (wallet) {
         try {
-          const chain = await wallet.chainId;
+          const chain = handleGetChain(wallet);
           setCurrentChainId(Number(chain));
         } catch (error) {
           console.error("Error fetching chain ID:", error);
@@ -45,19 +46,49 @@ const Header = () => {
     getChainId();
   }, [wallet]);
 
-  // Function to switch the chain
   const switchChain = async (chainId: number) => {
     if (!wallet) return;
     try {
-      console.log("first chainid:", wallet.chainId);
-      await wallet.switchChain(chainId);
-      console.log(`Successfully switched to chain ID: ${chainId}`);
-      console.log("second chainid:", wallet.chainId);
-      setCurrentChainId(chainId); // Update local state
+      await handleSwitchChain(wallet, chainId);
+      setCurrentChainId(chainId);
     } catch (error) {
       console.error("Failed to switch chain:", error);
     }
   };
+
+  const handleLogin = async() => {
+    const log = login();
+    
+    try {
+      const response = await fetch('/api/db/getUser', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ wallet: wallet.address }),
+      });
+      const result = await response.json();
+      if(result.receivedData == null){
+        try {
+          const response = await fetch('/api/db/createUser', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ wallet: wallet.address }),
+          })
+
+          const result = await response.json();
+          console.log("User created successfully:", result);
+        } catch (error) {
+          console.error("Error creating user:", error);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+   
+  }
 
   const handleNavigation = (href: string) => {
     if (!authenticated) {
@@ -73,7 +104,7 @@ const Header = () => {
   //     const provider = await wallet.getEthereumProvider();
   //     const address = wallet.address;
 
-  //     const customMessage = `message sign kar le land k`;
+  //     const customMessage = `message sign kar re land k`;
 
   //     const signature = await provider.request({
   //       method: 'personal_sign',
@@ -174,7 +205,7 @@ const Header = () => {
           ) : (
             <button
               className="bg-coffee text-cream px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all cursor-pointer dark:bg-cream dark:text-coffee hover:bg-coffee/70 dark:hover:bg-cream/70"
-              onClick={login}
+              onClick={handleLogin}
               disabled={!ready}>
               Connect Wallet
             </button>

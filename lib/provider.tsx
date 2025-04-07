@@ -10,7 +10,7 @@ export default function Providers({children}: {children: React.ReactNode}) {
     <PrivyProvider
       appId="cm6vjpmqc00nte6wj3g9v1p0n"
       config={{
-        defaultChain: arbitrumSepolia,
+        defaultChain: espresso,
         supportedChains: [espresso, arbitrumSepolia],
         // Customize Privy's appearance in your app
         appearance: {

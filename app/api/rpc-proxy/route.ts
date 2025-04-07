@@ -1,4 +1,3 @@
-// Create this file at: app/api/rpc-proxy/route.ts
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {

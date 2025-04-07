@@ -1,4 +1,4 @@
-import { Fuel, Repeat } from "lucide-react";
+import { Fuel, Link, Repeat } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,11 @@ import { createWalletClient, custom, encodeFunctionData, formatUnits, Hex, parse
 import { espresso } from "@/lib/espresso-chain";
 import { arbitrumSepolia } from "viem/chains";
 import { createPublicClient, http } from 'viem';
+import { handleGetArbitrumSepoliaBalance, handleGetEspressoBalance } from "@/app/utils/privy";
+import { PrismaClient } from '@prisma/client'
 
+
+const prisma = new PrismaClient()
 const proxyRpcUrl = "/api/rpc-proxy";
 
 const Bridge = () => {
@@ -30,6 +34,7 @@ const Bridge = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [espressoBalance, setEspressoBalance] = useState<number | bigint>(0);
+  const [hash, setHash] = useState<string | null>(null);
 
   useEffect(() => {
     const getAddress = async () => {
@@ -104,19 +109,33 @@ const Bridge = () => {
         args: [],
       });
 
-      // Define the transaction parameters
       const transaction = {
         account: address,
-        to: "0xFF0cEc49832Fe76957BBB55F1c331f4Fd689369a" as `0x${string}`, // Replace with your contract address
-        value: BigInt(amt ?? 0), // Use the amount from the state, ensure it's in wei
-        data: functionData, // No additional data needed for depositEth if it's payable
-        chain: arbitrumSepolia, // Ensure the correct chain ID is used
+        to: "0xFF0cEc49832Fe76957BBB55F1c331f4Fd689369a" as `0x${string}`,
+        value: BigInt(amt ?? 0),
+        data: functionData,
+        chain: arbitrumSepolia,
       };
 
-      // Send the transaction
       const hash = await walletClient.sendTransaction(transaction);
       console.log("Transaction hash:", hash);
-      setError(null);
+      setHash(hash);
+
+      const response = await fetch('/api/db/bridge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ hash: hash, status: "pending", amountInWei: amt, wallet: wallet.address }),
+      });
+      
+      const result = await response.json();
+      console.log("User created successfully:", result);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      console.log("User created successfully:", result.receivedData);
+      setError("error in bridging");
     } catch (error) {
       console.error("Transaction error:", error);
       setError(
@@ -127,115 +146,37 @@ const Bridge = () => {
       setLoading(false);
     }
   }
+
+  const handleGetBridgeData = async () => {
+    try {
+      const response = await fetch('/api/db/bridge/getBridgeDataByUser', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ wallet: wallet.address }),
+      })
+      const result = await response.json();
+      console.log("Bridge data:", result);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      console.log("Bridge data:", result.receivedData);
+    } catch (error) {
+      console.log("error getting bridge data", error);
+    }
+  }
   
 
   const getArbitrumSepoliaBalance = async () => {
-    if (!wallet || !wallet.address) {
-      setError("No wallet connected");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Check if the wallet is connected to the correct chain
-      if (Number(wallet.chainId) !== arbitrumSepolia.id) {
-        // Switch to Arbitrum Sepolia if not already connected
-        await wallet.switchChain(arbitrumSepolia.id);
-      }
-
-      console.log("Chain ID is", wallet.chainId);
-
-      // Use the RPC endpoint for Arbitrum Sepolia
-      const rpcUrl = arbitrumSepolia.rpcUrls.default.http[0];
-      const response = await fetch(rpcUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          id: 1,
-          method: "eth_getBalance",
-          params: [wallet.address, "latest"],
-        }),
-      });
-
-      // Log the raw response text for debugging
-      const responseText = await response.text();
-      console.log("Raw response:", responseText);
-
-      // Parse the JSON response
-      const data = JSON.parse(responseText);
-
-      if (data.error) {
-        throw new Error(data.error.message || "RPC error");
-      }
-
-      if (data.result) {
-        const balanceWei = BigInt(data.result); // Keep full precision in Wei
-        console.log("Balance in Wei:", balanceWei.toString()); // Full balance without loss
-
-        setArbBalance(BigInt(balanceWei)); // Convert to Ether for display
-      }
-    } catch (error) {
-      console.error("Error fetching balance:", error);
-      setError("Failed to fetch balance: " + (error as any).message);
-    } finally {
-      setLoading(false);
-    }
+    const getBalance = await handleGetArbitrumSepoliaBalance(wallet);
+    console.log("getbalance", getBalance);
+    setArbBalance(getBalance);
   };
 
   const getEspressoBalance = async () => {
-    if (!wallet || !wallet.address) {
-      setError("No wallet connected");
-      return;
-    }
-
-    if (Number(wallet.chainId) !== espresso.id) {
-      // Switch to Arbitrum Sepolia if not already connected
-      await wallet.switchChain(arbitrumSepolia.id);
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      console.log("chainId is first", wallet.chainId);
-
-      //   // Use the proxy RPC endpoint
-      //   if(wallet.chainId === 345678){
-      //     await wallet.switchChain(arbitrumSepolia.id);
-      //   }
-      const response = await fetch(proxyRpcUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          id: 1,
-          method: "eth_getBalance",
-          params: [wallet.address, "latest"],
-        }),
-      });
-
-      console.log("chainId is", wallet.chainId);
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error.message || "RPC error");
-      }
-
-      if (data.result) {
-        const balanceWei = BigInt(data.result); // Keep full precision in Wei
-        console.log("Balance in Wei:", balanceWei.toString()); // Full balance without loss
-        setEspressoBalance(balanceWei); // Set the full precision balance
-      }
-    } catch (error) {
-      console.error("Error fetching balance:", error);
-      setError("Failed to fetch balance: " + (error as any).message);
-    } finally {
-      setLoading(false);
-    }
+    const getbalance = await handleGetEspressoBalance(wallet); 
+    setEspressoBalance(getbalance);
   };
 
   return (
@@ -357,7 +298,7 @@ const Bridge = () => {
           </div>
           <button
             className="bg-cream  text-coffee px-4 py-2 rounded font-medium hover:opacity-65 transition-all cursor-pointer dark:bg-coffee dark:text-cream flex items-center justify-center mt-4 w-full"
-            onClick={handleBridgeFundToInbox}
+            onClick={handleGetBridgeData}
           >
             <Repeat className="mr-2" size={16} />
             Bridge
